@@ -1,0 +1,41 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px;
+  box-sizing: border-box;
+  align-items: start;
+}
+
+.stat-card {
+  background-color: #f2f3fe;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.stat-value.green {
+  color: green;
+}
+
+.stat-value.red {
+  color: red;
+}
+
+.stat-value.black {
+  color: #222;
+}

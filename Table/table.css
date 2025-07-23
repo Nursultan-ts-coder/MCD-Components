@@ -1,0 +1,10 @@
+/* styles.css */
+table {
+  border-spacing: 0 0.5rem;
+}
+th {
+  height: 50px;
+}
+td {
+  height: 50px;
+}
