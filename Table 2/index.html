@@ -9,8 +9,10 @@
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
       rel="stylesheet"
     />
+    <link href="style.css" rel="stylesheet" />
     <style>
       table {
+        padding: 10px;
         border-spacing: 0 0.5rem;
       }
       th {
@@ -26,7 +28,17 @@
     </style>
   </head>
   <body>
-    <div class="p-4" id="table-root"></div>
+    <div id="table-root"></div>
+
+    <!-- Filter popup -->
+    <div id="filter-popup" class="filter-popup" style="display: none">
+      <input type="text" id="filter-search" placeholder="Search..." />
+      <div id="filter-options" class="filter-options"></div>
+      <div class="filter-actions">
+        <button id="filter-apply">Apply</button>
+        <button id="filter-clear">Clear</button>
+      </div>
+    </div>
     <script src="app.js"></script>
   </body>
 </html>
