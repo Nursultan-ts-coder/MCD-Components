@@ -12,6 +12,7 @@
     <link href="style.css" rel="stylesheet" />
     <style>
       table {
+        padding: 10px;
         border-spacing: 0 0.5rem;
       }
       th {
@@ -27,61 +28,7 @@
     </style>
   </head>
   <body>
-    <div class="custom-table-container">
-      <button id="export-btn">Export to CSV</button>
-      <table class="custom-table" id="device-table">
-        <thead>
-          <tr>
-            <th>
-              <span class="filter-header" data-col="0"
-                ><span class="header-text">Restaurant Name</span>
-                <img
-                  src="https://img.icons8.com/material-outlined/20/filter.png"
-                  class="filter-icon"
-              /></span>
-            </th>
-            <th>
-              <span class="filter-header" data-col="1"
-                ><span class="header-text">Device Name</span>
-                <img
-                  src="https://img.icons8.com/material-outlined/20/filter.png"
-                  class="filter-icon"
-              /></span>
-            </th>
-            <th>
-              <span class="filter-header" data-col="2"
-                ><span class="header-text">Status</span>
-                <img
-                  src="https://img.icons8.com/material-outlined/20/filter.png"
-                  class="filter-icon"
-              /></span>
-            </th>
-            <th>
-              <span class="filter-header" data-col="3"
-                ><span class="header-text">Device Type</span>
-                <img
-                  src="https://img.icons8.com/material-outlined/20/filter.png"
-                  class="filter-icon"
-              /></span>
-            </th>
-            <th>
-              <span class="filter-header" data-col="4"
-                ><span class="header-text">Serial Number</span>
-                <img
-                  src="https://img.icons8.com/material-outlined/20/filter.png"
-                  class="filter-icon"
-              /></span>
-            </th>
-          </tr>
-        </thead>
-        <tbody id="custom-table-body"></tbody>
-      </table>
-      <div class="pagination">
-        <button id="prev-page">Previous</button>
-        <span id="page-info"></span>
-        <button id="next-page">Next</button>
-      </div>
-    </div>
+    <div id="table-root"></div>
 
     <!-- Filter popup -->
     <div id="filter-popup" class="filter-popup" style="display: none">

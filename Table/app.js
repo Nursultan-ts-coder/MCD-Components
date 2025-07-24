@@ -40,7 +40,7 @@ function renderTable() {
         ${columns
           .map(
             (col) =>
-              `<th class="sticky top-0 px-6 py-4 text-left text-sm font-medium text-gray-600">${col.label}</th>`
+              `<th class="sticky text-left top-0 px-6 py-4 text-sm font-medium text-gray-600">${col.label}</th>`
           )
           .join("")}
       </tr>

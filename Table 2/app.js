@@ -1,3 +1,4 @@
+// Sample data (normally from Grafana)
 const data = {
   series: [
     {
@@ -44,23 +45,7 @@ const data = {
         },
         {
           name: "productType",
-          values: [
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-            "wireless",
-          ],
+          values: Array(15).fill("wireless"),
         },
         {
           name: "serial",
@@ -91,13 +76,18 @@ const data = {
   ],
 };
 
-// DO NOT redeclare document! It is provided by your environment.
-
 const tbody = document.querySelector("#custom-table-body");
 const popup = document.querySelector("#filter-popup");
 const searchInput = popup.querySelector("#filter-search");
 const optionsDiv = popup.querySelector("#filter-options");
 const pageInfo = document.querySelector("#page-info");
+const columns = [
+  { key: "network_name", label: "Network Name" },
+  { key: "name", label: "Device Name" },
+  { key: "meraki_device_status (lastNotNull)", label: "Status" },
+  { key: "productType", label: "Device Type" },
+  { key: "serial", label: "Serial Number" },
+];
 
 let allData = [];
 let filters = {};
@@ -106,133 +96,103 @@ let sortAsc = true;
 let currentPage = 1;
 const rowsPerPage = 10;
 let selectedCol = null;
+const headerNames = [];
 
-// Get data from Grafana
-const series = data.series[0];
-console.log("series:", series);
-if (series) {
-  const restaurantNames = series.fields[0].values;
-  const deviceNames = series.fields[1].values;
-  const deviceTypes = series.fields[2].values;
-  const serialNumbers = series.fields[3].values;
-  const statuses = series.fields[4].values;
-
-  allData = restaurantNames.map((_, i) => [
-    restaurantNames[i] ?? "No data",
-    deviceNames[i] ?? "No data",
-    statuses[i] == 0
-      ? "Offline"
-      : statuses[i] == 2
-      ? "Alerting"
-      : statuses[i] ?? "Unknown",
-    deviceTypes[i] ?? "No data",
-    serialNumbers[i] ?? "No data",
-  ]);
-}
-
-function renderTable(data) {
-  tbody.innerHTML = "";
-  const start = (currentPage - 1) * rowsPerPage;
-  const pageData = data.slice(start, start + rowsPerPage);
-
-    // const totalPages = Math.ceil(tableData.length / rowsPerPage);
-    // const start = (currentPage - 1) * rowsPerPage;
-    // const pageData = tableData.slice(start, start + rowsPerPage);
-
-    // const title = `<h2 class="font-bold text-xl mb-4">Sticky Pagination Table</h2>`;
-    // const navButtons = renderPagination(currentPage, totalPages);
-  
-
-  pageData.forEach((row) => {
-    const tr = document.createElement("tr");
-    row.forEach((cell, i) => {
-      const td = document.createElement("td");
-      if (i === 2) {
-        const span = document.createElement("span");
-        span.textContent = cell;
-        span.className =
-          cell === "Offline"
-            ? "status-offline"
-            : cell === "Alerting"
-            ? "status-alerting"
-            : "";
-        td.appendChild(span);
-      } else {
-        td.textContent = cell;
-      }
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-
-  pageInfo.textContent = `Page ${currentPage} of ${Math.max(
-    1,
-    Math.ceil(data.length / rowsPerPage)
-  )}`;
-  updateSortIndicators();
-  // bindPaginationEvents();
+function initData() {
+  const series = data.series[0];
+  if (series) {
+    const [networkName, name, productType, serial, status] = series.fields.map(
+      (f) => f.values
+    );
+    allData = networkName.map((_, i) => [
+      networkName[i] ?? "No data",
+      name[i] ?? "No data",
+      status[i] == 0
+        ? "Offline"
+        : status[i] == 2
+        ? "Alerting"
+        : status[i] ?? "Unknown",
+      productType[i] ?? "No data",
+      serial[i] ?? "No data",
+    ]);
+  }
 }
 
 function getFilteredSortedData() {
-  let data = [...allData];
-  Object.keys(filters).forEach((col) => {
-    const allowed = filters[col];
-    data = data.filter((row) => allowed.includes(row[col]));
+  let filteredData = [...allData];
+  debugger;
+  Object.keys(filters).forEach((colKey) => {
+    const colIndex = columns.findIndex((c) => c.key === colKey);
+    if (colIndex === -1) return;
+    const allowed = filters[colKey];
+    filteredData = filteredData.filter((row) =>
+      allowed.includes(row[colIndex])
+    );
   });
 
   if (sortCol !== null) {
-    data.sort((a, b) => {
+    filteredData.sort((a, b) => {
       const v1 = a[sortCol];
       const v2 = b[sortCol];
-      return sortAsc
-        ? v1.toString().localeCompare(v2.toString())
-        : v2.toString().localeCompare(v1.toString());
+      return sortAsc ? v1.localeCompare(v2) : v2.localeCompare(v1);
     });
   }
-
-  return data;
+  return filteredData;
 }
 
-// Pagination
-// document.querySelector("#prev-page").onclick = () => {
-//   if (currentPage > 1) {
-//     currentPage--;
-//     renderTable(getFilteredSortedData());
-//   }
-// };
-// document.querySelector("#next-page").onclick = () => {
-//   const totalPages = Math.ceil(getFilteredSortedData().length / rowsPerPage);
-//   if (currentPage < totalPages) {
-//     currentPage++;
-//     renderTable(getFilteredSortedData());
-//   }
-// };
+function renderTable(data) {
+  const root = document.getElementById("table-root");
+  root.innerHTML = "";
+  const totalPages = Math.ceil(data.length / rowsPerPage);
+  const start = (currentPage - 1) * rowsPerPage;
+  const pageData = data.slice(start, start + rowsPerPage);
 
-// Export
-document.querySelector("#export-btn").onclick = () => {
-  const header = [
-    "Restaurant Name",
-    "Device Name",
-    "Status",
-    "Device Type",
-    "Serial Number",
-  ];
-  const rows = [header, ...getFilteredSortedData()];
-  const csv = rows
-    .map((row) => row.map((cell) => `"${cell}"`).join(","))
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "table_export.csv";
-  a.click();
-};
+  const title = `<h2 class="font-bold text-xl mb-4">Sticky Pagination Table</h2>`;
+  const navButtons = renderPagination(currentPage, totalPages);
 
-// Filtering
-function openFilter(colIndex, icon, thRect) {
-  selectedCol = colIndex;
+  const tableHead = `<thead><tr>${columns
+    .map(
+      (
+        col
+      ) => `<th class="sticky text-left top-0 text-sm font-medium text-gray-600">
+        <span class="filter-header sticky top-0 px-6 py-4 text-left text-sm font-medium text-gray-600" data-col="0">
+          <span class="header-text">${col.label}</span>
+          <img src="https://img.icons8.com/material-outlined/20/filter.png" class="filter-icon" />
+        </span>
+      </th>`
+    )
+    .join("")}</tr></thead>`;
+
+  const tableBody = `<tbody>${pageData
+    .map(
+      (row, idx) =>
+        `<tr class="${idx % 2 === 0 ? "bg-indigo-50" : "bg-blue-50"}">${columns
+          .map((_, i) => {
+            let cell = row[i];
+            if (i === 2)
+              cell = `<span class="inline-block px-3 py-1 text-sm font-medium text-white rounded-full bg-red-500">${row[i]}</span>`;
+            return `<td class="px-6 text-sm text-gray-700">${cell}</td>`;
+          })
+          .join("")}</tr>`
+    )
+    .join("")}</tbody>`;
+
+  root.innerHTML = `<div class="flex justify-between items-center mb-4">${title}${navButtons}</div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full border-separate">${tableHead}${tableBody}</table>
+    </div>`;
+
+  setupHeaderEvents();
+  setupPopupEvents();
+  bindPaginationEvents();
+  updateSortIndicators();
+}
+
+function openFilter(colKey, icon, thRect) {
+  selectedCol = colKey;
+  const colIndex = columns.findIndex((c) => c.key === colKey);
   const values = [...new Set(allData.map((row) => row[colIndex]))];
-  const selected = filters[colIndex] || [];
+  const selected = filters[colKey] || [];
 
   optionsDiv.innerHTML = `
     <label><input type="checkbox" value="__all__" ${
@@ -245,10 +205,8 @@ function openFilter(colIndex, icon, thRect) {
             selected.length === 0 || selected.includes(val) ? "checked" : ""
           }/> ${val}</label>`
       )
-      .join("")}
-  `;
+      .join("")}`;
 
-  // Multi-select 'All' logic
   const allCheckbox = optionsDiv.querySelector('input[value="__all__"]');
   allCheckbox.addEventListener("change", function () {
     const checked = this.checked;
@@ -259,160 +217,57 @@ function openFilter(colIndex, icon, thRect) {
   optionsDiv.querySelectorAll("input[type=checkbox]").forEach((cb) => {
     if (cb.value !== "__all__") {
       cb.addEventListener("change", function () {
-        if (!this.checked) {
-          allCheckbox.checked = false;
-        }
+        if (!this.checked) allCheckbox.checked = false;
       });
     }
   });
 
-  // Position popup relative to the table container, not the viewport
-  const container = document.querySelector(".custom-table-container");
+  const container = document.querySelector("#table-root");
   const iconRect = icon.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
-
-  popup.style.top = `${
-    iconRect.bottom - containerRect.top + container.scrollTop + 5
-  }px`;
-
   const top = thRect.top + window.scrollY + thRect.height + 5;
   const left = thRect.left + window.scrollX;
-
-  popup.style.left = `${left}px`;
   popup.style.top = `${top}px`;
-
+  popup.style.left = `${left}px`;
   popup.style.width = "auto";
-
   popup.style.display = "block";
   searchInput.value = "";
 }
 
-// Prevent popup from closing when clicking inside it
-popup.addEventListener("mousedown", function (e) {
-  e.stopPropagation();
-});
-
-// Apply filter
-popup.querySelector("#filter-apply").onclick = (e) => {
-  e.stopPropagation();
-  const checks = [...optionsDiv.querySelectorAll("input[type=checkbox]")];
-  const selected = checks
-    .filter((c) => c.checked && c.value !== "__all__")
-    .map((c) => c.value);
-  filters[selectedCol] = selected.length ? selected : undefined;
-  if (!filters[selectedCol]) delete filters[selectedCol];
-  popup.style.display = "none";
-  currentPage = 1;
-  renderTable(getFilteredSortedData());
-};
-
-// Clear filter
-popup.querySelector("#filter-clear").onclick = (e) => {
-  e.stopPropagation();
-  delete filters[selectedCol];
-  popup.style.display = "none";
-  currentPage = 1;
-  renderTable(getFilteredSortedData());
-};
-
-// Filter search
-searchInput.addEventListener("input", () => {
-  const keyword = searchInput.value.toLowerCase();
-  optionsDiv.querySelectorAll("label").forEach((label) => {
-    const text = label.textContent.toLowerCase();
-    label.style.display = text.includes(keyword) ? "" : "none";
-  });
-});
-
-// Only close popup if click is outside both popup and filter icons
-document.addEventListener("mousedown", (e) => {
-  if (
-    !popup.contains(e.target) &&
-    !e.target.classList.contains("filter-icon")
-  ) {
-    popup.style.display = "none";
-  }
-});
-
-// Sorting and filter icon handling
-const headerNames = [];
-document.querySelectorAll("thead th").forEach((th, i) => {
-  const filterHeader = th.querySelector(".filter-header");
-  const filterIcon = filterHeader.querySelector(".filter-icon");
-  const headerText = filterHeader.querySelector(".header-text");
-  headerNames[i] = headerText.textContent.trim().replace(/[\u25B2\u25BC]/g, "");
-
-  // Sort on text click
-  headerText.addEventListener("click", (e) => {
-    if (sortCol === i) {
-      sortAsc = !sortAsc;
-    } else {
-      sortCol = i;
-      sortAsc = true;
-    }
-    currentPage = 1;
-    renderTable(getFilteredSortedData());
-  });
-
-  // Filter popup on icon click
-  filterIcon.addEventListener("mousedown", (e) => {
-    e.stopPropagation();
-
-    const thRect = th.getBoundingClientRect();
-    openFilter(i, filterIcon, thRect);
-  });
-});
-
-// Sort indicator
-function updateSortIndicators() {
-  document.querySelectorAll("thead th").forEach((th, i) => {
-    const filterHeader = th.querySelector(".filter-header");
-    let textNode = filterHeader.querySelector(".header-text");
-    let text = headerNames[i];
-    if (sortCol === i) {
-      text += sortAsc ? " ▲" : " ▼";
-    }
-    textNode.textContent = text;
-  });
-}
-
 function renderPagination(page, totalPages) {
-  let pages = [];
-  if (totalPages <= 3) {
-    pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-  } else if (page === 1) {
-    pages = [1, 2, 3];
-  } else if (page === totalPages) {
-    pages = [totalPages - 2, totalPages - 1, totalPages];
-  } else {
-    pages = [page - 1, page, page + 1];
-  }
+  let pages =
+    totalPages <= 3
+      ? Array.from({ length: totalPages }, (_, i) => i + 1)
+      : page === 1
+      ? [1, 2, 3]
+      : page === totalPages
+      ? [totalPages - 2, totalPages - 1, totalPages]
+      : [page - 1, page, page + 1];
 
-  return `
-    <nav id="pagination" class="inline-flex items-center space-x-2">
-      <button class="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-100" data-page="${
-        page - 1
-      }" ${page === 1 ? 'disabled style="opacity: 0.5"' : ""}>Prev</button>
-      ${pages
-        .map(
-          (p) =>
-            `<button class="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-100 ${
-              p === page ? "bg-blue-100 font-semibold" : ""
-            }" data-page="${p}">${p}</button>`
-        )
-        .join("")}
-      <button class="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-100" data-page="${
-        page + 1
-      }" ${
+  return `<nav id="pagination" class="inline-flex items-center space-x-2">
+    <button class="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-100" data-page="${
+      page - 1
+    }" ${page === 1 ? 'disabled style="opacity: 0.5"' : ""}>Prev</button>
+    ${pages
+      .map(
+        (p) =>
+          `<button class="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-100 ${
+            p === page ? "bg-blue-100 font-semibold" : ""
+          }" data-page="${p}">${p}</button>`
+      )
+      .join("")}
+    <button class="px-3 py-1 rounded-lg border border-gray-200 hover:bg-gray-100" data-page="${
+      page + 1
+    }" ${
     page === totalPages ? 'disabled style="opacity: 0.5"' : ""
   }>Next</button>
-    </nav>`;
+  </nav>`;
 }
 
 function bindPaginationEvents() {
   const nav = document.getElementById("pagination");
   if (!nav) return;
-
+  const tableData = getFilteredSortedData();
   nav.querySelectorAll("button[data-page]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const page = parseInt(btn.getAttribute("data-page"));
@@ -422,11 +277,97 @@ function bindPaginationEvents() {
         page <= Math.ceil(tableData.length / rowsPerPage)
       ) {
         currentPage = page;
-        renderTable();
+        renderTable(tableData);
       }
     });
   });
 }
 
-// Initial render
-renderTable(getFilteredSortedData());
+function updateSortIndicators() {
+  document.querySelectorAll("thead th").forEach((th, i) => {
+    const filterHeader = th.querySelector(".filter-header");
+    let textNode = filterHeader.querySelector(".header-text");
+    let text = headerNames[i];
+    if (sortCol === i) text += sortAsc ? " ▲" : " ▼";
+    textNode.textContent = text;
+  });
+}
+
+function setupHeaderEvents() {
+  document.querySelectorAll("thead th").forEach((th, i) => {
+    const filterHeader = th.querySelector(".filter-header");
+    const filterIcon = filterHeader.querySelector(".filter-icon");
+    const headerText = filterHeader.querySelector(".header-text");
+
+    headerNames[i] = headerText.textContent
+      .trim()
+      .replace(/[\u25B2\u25BC]/g, "");
+
+    headerText.addEventListener("click", () => {
+      console.log("filterHeader:", filterHeader);
+      console.log("headerText:", headerText);
+      console.log("filterIcon:", filterIcon);
+      console.log("sortCol:", sortCol);
+      console.log("th:", th);
+
+      if (sortCol === i) sortAsc = !sortAsc;
+      else {
+        sortCol = i;
+        sortAsc = true;
+      }
+      currentPage = 1;
+      renderTable(getFilteredSortedData());
+    });
+
+    filterIcon.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      const thRect = th.getBoundingClientRect();
+      openFilter(columns[i].key, filterIcon, thRect);
+    });
+  });
+}
+
+function setupPopupEvents() {
+  popup.addEventListener("mousedown", (e) => e.stopPropagation());
+  popup.querySelector("#filter-apply").onclick = (e) => {
+    e.stopPropagation();
+    const checks = [...optionsDiv.querySelectorAll("input[type=checkbox]")];
+    const selected = checks
+      .filter((c) => c.checked && c.value !== "__all__")
+      .map((c) => c.value);
+    filters[selectedCol] = selected.length ? selected : undefined;
+    if (!filters[selectedCol]) delete filters[selectedCol];
+    popup.style.display = "none";
+    currentPage = 1;
+    renderTable(getFilteredSortedData());
+  };
+  popup.querySelector("#filter-clear").onclick = (e) => {
+    e.stopPropagation();
+    delete filters[selectedCol];
+    popup.style.display = "none";
+    currentPage = 1;
+    renderTable(getFilteredSortedData());
+  };
+  searchInput.addEventListener("input", () => {
+    const keyword = searchInput.value.toLowerCase();
+    optionsDiv.querySelectorAll("label").forEach((label) => {
+      const text = label.textContent.toLowerCase();
+      label.style.display = text.includes(keyword) ? "" : "none";
+    });
+  });
+  document.addEventListener("mousedown", (e) => {
+    if (
+      !popup.contains(e.target) &&
+      !e.target.classList.contains("filter-icon")
+    ) {
+      popup.style.display = "none";
+    }
+  });
+}
+
+function init() {
+  initData();
+  renderTable(getFilteredSortedData());
+}
+
+init();
