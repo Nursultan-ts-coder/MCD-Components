@@ -1,0 +1,62 @@
+.cards-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px;
+  box-sizing: border-box;
+  align-items: start;
+}
+
+.card {
+  background-color: #f2f3fe;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  font-size: 14px;
+  line-height: 20px;
+  color: #2b2b2b;
+}
+
+.card-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+  font-size: 24px;
+  line-height: 20px;
+  color: #2b2b2b;
+}
+.cart-child {
+  font-size: 12px;
+  line-height: 16px;
+  color: #2b2b2bb2;
+}
+.progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.card-progress {
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  flex: 1;
+  max-width: 120px;
+}
+.progress-bar-item {
+  height: 100%;
+  background-color: #1f7c00;
+  border-radius: 4px;
+}
+.status-text {
+  font-size: 12px;
+  line-height: 16px;
+  color: #2b2b2b;
+}
