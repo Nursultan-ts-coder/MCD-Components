@@ -1,0 +1,97 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sticky Pagination Table</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link href="style.css" rel="stylesheet" />
+    <style>
+      table {
+        border-spacing: 0 0.5rem;
+      }
+      th {
+        height: 50px;
+      }
+      td {
+        height: 50px;
+      }
+
+      .table-root {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="custom-table-container">
+      <button id="export-btn">Export to CSV</button>
+      <table class="custom-table" id="device-table">
+        <thead>
+          <tr>
+            <th>
+              <span class="filter-header" data-col="0"
+                ><span class="header-text">Restaurant Name</span>
+                <img
+                  src="https://img.icons8.com/material-outlined/20/filter.png"
+                  class="filter-icon"
+              /></span>
+            </th>
+            <th>
+              <span class="filter-header" data-col="1"
+                ><span class="header-text">Device Name</span>
+                <img
+                  src="https://img.icons8.com/material-outlined/20/filter.png"
+                  class="filter-icon"
+              /></span>
+            </th>
+            <th>
+              <span class="filter-header" data-col="2"
+                ><span class="header-text">Status</span>
+                <img
+                  src="https://img.icons8.com/material-outlined/20/filter.png"
+                  class="filter-icon"
+              /></span>
+            </th>
+            <th>
+              <span class="filter-header" data-col="3"
+                ><span class="header-text">Device Type</span>
+                <img
+                  src="https://img.icons8.com/material-outlined/20/filter.png"
+                  class="filter-icon"
+              /></span>
+            </th>
+            <th>
+              <span class="filter-header" data-col="4"
+                ><span class="header-text">Serial Number</span>
+                <img
+                  src="https://img.icons8.com/material-outlined/20/filter.png"
+                  class="filter-icon"
+              /></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="custom-table-body"></tbody>
+      </table>
+      <div class="pagination">
+        <button id="prev-page">Previous</button>
+        <span id="page-info"></span>
+        <button id="next-page">Next</button>
+      </div>
+    </div>
+
+    <!-- Filter popup -->
+    <div id="filter-popup" class="filter-popup" style="display: none">
+      <input type="text" id="filter-search" placeholder="Search..." />
+      <div id="filter-options" class="filter-options"></div>
+      <div class="filter-actions">
+        <button id="filter-apply">Apply</button>
+        <button id="filter-clear">Clear</button>
+      </div>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

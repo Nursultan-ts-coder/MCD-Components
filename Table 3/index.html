@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MDC Web Table with Full Features</title>
+
+  <!-- MDC Web CSS & JS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css"
+  />
+  <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    rel="stylesheet"
+  />
+
+  <style>
+    body {
+      font-family: Roboto, sans-serif;
+      padding: 40px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #ccc;
+      position: relative;
+    }
+
+    th {
+      background-color: #f5f5f5;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .filter-icon {
+      cursor: pointer;
+      font-size: 18px;
+      vertical-align: middle;
+      margin-left: 6px;
+      color: #555;
+    }
+
+    .pagination {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .pagination button {
+      margin: 0 5px;
+      font-size: 14px;
+    }
+
+    .reset-btn {
+      margin-top: 20px;
+      margin-right: 10px;
+    }
+
+    .export-btn {
+      margin-top: 20px;
+      margin-right: 10px;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      margin-top: 16px;
+      box-sizing: border-box;
+    }
+
+    .filter-label {
+      font-weight: bold;
+    }
+
+    /* Custom positioning for modal */
+    #filter-dialog {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      margin: 0 !important;
+      width: 280px !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      background: white;
+      z-index: 1000;
+      display: none;
+      padding: 20px;
+    }
+
+    #filter-dialog.show {
+      display: block;
+    }
+
+    /* Hide default MDC dialog styles (we are customizing) */
+    .mdc-dialog__container,
+    .mdc-dialog__surface,
+    .mdc-dialog__scrim,
+    .mdc-dialog__title,
+    .mdc-dialog__content,
+    .mdc-dialog__actions {
+      all: unset;
+    }
+
+    /* Editable cell styles */
+    td[contenteditable="true"] {
+      background-color: #fffbea;
+      border: 1px solid #e0e0e0;
+      outline: none;
+    }
+
+    td[contenteditable="true"]:focus {
+      border-color: #6200ee;
+      box-shadow: 0 0 2px #6200ee;
+    }
+  </style>
+</head>
+<body>
+  <h2 class="mdc-typography--headline5">Material Table with Full Features</h2>
+
+  <button class="mdc-button mdc-button--outlined reset-btn" id="resetFiltersBtn">
+    Reset Filters
+  </button>
+  <button class="mdc-button mdc-button--outlined export-btn" id="exportCsvBtn">
+    Export CSV
+  </button>
+  <button class="mdc-button mdc-button--outlined export-btn" id="exportPdfBtn">
+    Export PDF
+  </button>
+
+  <table id="data-table" aria-label="Material design table with filters">
+    <thead>
+      <tr>
+        <th data-column="name" tabindex="0">
+          Name
+          <span class="material-icons filter-icon" data-column="name" tabindex="0"
+            >filter_list</span
+          >
+          <span class="sort-indicator"></span>
+        </th>
+        <th data-column="age" tabindex="0">
+          Age
+          <span class="material-icons filter-icon" data-column="age" tabindex="0"
+            >filter_list</span
+          >
+          <span class="sort-indicator"></span>
+        </th>
+        <th data-column="city" tabindex="0">
+          City
+          <span class="material-icons filter-icon" data-column="city" tabindex="0"
+            >filter_list</span
+          >
+          <span class="sort-indicator"></span>
+        </th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+  <!-- Custom filter modal -->
+  <div id="filter-dialog" role="dialog" aria-modal="true" aria-labelledby="filter-label">
+    <label id="filter-label" class="filter-label" for="filter-input"></label>
+    <input
+      type="text"
+      class="modal-input"
+      id="filter-input"
+      placeholder="Enter filter..."
+      aria-describedby="filter-label"
+    />
+    <select class="modal-input" id="filter-select" style="display: none"></select>
+
+    <div style="margin-top: 20px; text-align: right">
+      <button id="filterCancelBtn" class="mdc-button mdc-button--outlined">
+        Cancel
+      </button>
+      <button id="filterApplyBtn" class="mdc-button mdc-button--raised">
+        Apply
+      </button>
+    </div>
+  </div>
+
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const data = [
+      { name: "Alice", age: 25, city: "New York" },
+      { name: "Bob", age: 30, city: "Los Angeles" },
+      { name: "Mike", age: 28, city: "Chicago" },
+      { name: "Sara", age: 22, city: "New York" },
+      { name: "Tom", age: 35, city: "Chicago" },
+      { name: "Jane", age: 40, city: "Boston" },
+      { name: "Adam", age: 26, city: "Dallas" },
+      { name: "Lucy", age: 31, city: "Miami" },
+      { name: "Zack", age: 27, city: "San Francisco" },
+      { name: "Eve", age: 29, city: "Chicago" },
+      { name: "Kyle", age: 34, city: "Seattle" },
+    ];
+
+    // Editable copy of data
+    let editableData = JSON.parse(JSON.stringify(data));
+
+    const filters = { name: "", age: "", city: "" };
+    let currentColumn = "";
+    let currentSort = { column: "", dir: 1 };
+    let currentPage = 1;
+    const pageSize = 5;
+
+    const tableBody = document.getElementById("table-body");
+    const filterDialog = document.getElementById("filter-dialog");
+    const filterInput = document.getElementById("filter-input");
+    const filterSelect = document.getElementById("filter-select");
+    const filterLabel = document.getElementById("filter-label");
+
+    const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
+    const exportPdfBtn = document.getElementById("exportPdfBtn");
+
+    // Render table rows with pagination, filtering, sorting
+    function renderTable() {
+      tableBody.innerHTML = "";
+
+      // Filter data
+      let filtered = editableData.filter((row) =>
+        Object.keys(filters).every((key) =>
+          row[key]
+            .toString()
+            .toLowerCase()
+            .includes(filters[key].toLowerCase())
+        )
+      );
+
+      // Sort data
+      if (currentSort.column) {
+        filtered.sort((a, b) => {
+          let valA = a[currentSort.column];
+          let valB = b[currentSort.column];
+          if (typeof valA === "string") valA = valA.toLowerCase();
+          if (typeof valB === "string") valB = valB.toLowerCase();
+          return valA > valB ? currentSort.dir : valA < valB ? -currentSort.dir : 0;
+        });
+      }
+
+      // Pagination
+      const totalPages = Math.ceil(filtered.length / pageSize);
+      if (currentPage > totalPages) currentPage = totalPages || 1;
+      const start = (currentPage - 1) * pageSize;
+      const paged = filtered.slice(start, start + pageSize);
+
+      paged.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-index", i + start);
+
+        tr.innerHTML = `
+          <td contenteditable="true" data-field="name">${row.name}</td>
+          <td contenteditable="true" data-field="age">${row.age}</td>
+          <td contenteditable="true" data-field="city">${row.city}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      renderPagination(totalPages);
+      updateSortIndicators();
+    }
+
+    // Pagination buttons
+    function renderPagination(totalPages) {
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        btn.onclick = () => {
+          currentPage = i;
+          renderTable();
+        };
+        if (i === currentPage) btn.style.fontWeight = "bold";
+        pagination.appendChild(btn);
+      }
+    }
+
+    // Sort columns when header clicked
+    document.querySelectorAll("th[data-column]").forEach((th) => {
+      th.addEventListener("click", (e) => {
+        // Ignore clicks on filter icons
+        if (e.target.classList.contains("filter-icon")) return;
+
+        const column = th.dataset.column;
+        if (currentSort.column === column) {
+          currentSort.dir = -currentSort.dir;
+        } else {
+          currentSort.column = column;
+          currentSort.dir = 1;
+        }
+        renderTable();
+      });
+    });
+
+    // Update sort arrow indicators
+    function updateSortIndicators() {
+      document.querySelectorAll("th[data-column]").forEach((th) => {
+        const span = th.querySelector(".sort-indicator");
+        if (!span) return;
+        span.textContent = "";
+        if (th.dataset.column === currentSort.column) {
+          span.textContent = currentSort.dir === 1 ? "▲" : "▼";
+          span.style.marginLeft = "6px";
+          span.style.fontSize = "14px";
+        }
+      });
+    }
+
+    // Reset filters button
+    resetFiltersBtn.addEventListener("click", () => {
+      filters.name = "";
+      filters.age = "";
+      filters.city = "";
+      currentPage = 1;
+      renderTable();
+    });
+
+    // Filter modal open below icon
+    document.querySelectorAll(".filter-icon").forEach((icon) => {
+      icon.addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent header click sorting
+        currentColumn = icon.dataset.column;
+        filterLabel.textContent =
+          "Filter by " + currentColumn.charAt(0).toUpperCase() + currentColumn.slice(1);
+
+        // Show dropdown for city, text input otherwise
+        if (currentColumn === "city") {
+          const uniqueCities = [
+            ...new Set(editableData.map((d) => d.city)),
+          ].sort();
+          filterSelect.innerHTML = uniqueCities
+            .map(
+              (city) =>
+                `<option value="${city}" ${
+                  filters.city === city ? "selected" : ""
+                }>${city}</option>`
+            )
+            .join("");
+          filterSelect.style.display = "block";
+          filterInput.style.display = "none";
+        } else {
+          filterInput.value = filters[currentColumn];
+          filterInput.style.display = "block";
+          filterSelect.style.display = "none";
+        }
+
+        // Position modal under the icon
+        const rect = icon.getBoundingClientRect();
+        const bodyRect = document.body.getBoundingClientRect();
+        filterDialog.style.top = rect.bottom + window.scrollY + 8 + "px";
+        filterDialog.style.left = rect.left + window.scrollX - 140 + "px"; // center approx
+        filterDialog.classList.add("show");
+
+        filterInput.focus();
+      });
+    });
+
+    // Cancel filter modal
+    document.getElementById("filterCancelBtn").addEventListener("click", () => {
+      filterDialog.classList.remove("show");
+    });
+
+    // Apply filter modal
+    document.getElementById("filterApplyBtn").addEventListener("click", () => {
+      filters[currentColumn] =
+        currentColumn === "city" ? filterSelect.value : filterInput.value.trim();
+      currentPage = 1;
+      filterDialog.classList.remove("show");
+      renderTable();
+    });
+
+    // Click outside modal closes it
+    document.addEventListener("click", (e) => {
+      if (!filterDialog.contains(e.target) && !e.target.classList.contains("filter-icon")) {
+        filterDialog.classList.remove("show");
+      }
+    });
+
+    // Editable cells update data
+    tableBody.addEventListener("input", (e) => {
+      const target = e.target;
+      if (target.hasAttribute("contenteditable")) {
+        const field = target.dataset.field;
+        const rowIndex = Number(target.parentElement.dataset.index);
+        if (field && !isNaN(rowIndex)) {
+          editableData[rowIndex][field] = field === "age" ? Number(target.textContent) : target.textContent.trim();
+        }
+      }
+    });
+
+    // CSV export helper
+    function exportCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Name,Age,City\r\n";
+
+      let filtered = editableData.filter((row) =>
+        Object.keys(filters).every((key) =>
+          row[key]
+            .toString()
+            .toLowerCase()
+            .includes(filters[key].toLowerCase())
+        )
+      );
+
+      if (currentSort.column) {
+        filtered.sort((a, b) => {
+          let valA = a[currentSort.column];
+          let valB = b[currentSort.column];
+          if (typeof valA === "string") valA = valA.toLowerCase();
+          if (typeof valB === "string") valB = valB.toLowerCase();
+          return valA > valB ? currentSort.dir : valA < valB ? -currentSort.dir : 0;
+        });
+      }
+
+      filtered.forEach((row) => {
+        csvContent += `${row.name},${row.age},${row.city}\r\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "table_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    exportCsvBtn.addEventListener("click", exportCSV);
+
+    // PDF export helper using jsPDF
+    exportPdfBtn.addEventListener("click", () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.text("Table Export", 14, 22);
+
+      const headers = [["Name", "Age", "City"]];
+      let filtered = editableData.filter((row) =>
+        Object.keys(filters).every((key) =>
+          row[key]
+            .toString()
+            .toLowerCase()
+            .includes(filters[key].toLowerCase())
+        )
+      );
+      if (currentSort.column) {
+        filtered.sort((a, b) => {
+          let valA = a[currentSort.column];
+          let valB = b[currentSort.column];
+          if (typeof valA === "string") valA = valA.toLowerCase();
+          if (typeof valB === "string") valB = valB.toLowerCase();
+          return valA > valB ? currentSort.dir : valA < valB ? -currentSort.dir : 0;
+        });
+      }
+
+      const rows = filtered.map((row) => [row.name, row.age.toString(), row.city]);
+
+      doc.autoTable({
+        head: headers,
+        body: rows,
+        startY: 30,
+      });
+
+      doc.save("table_export.pdf");
+    });
+
+    // Load jsPDF AutoTable plugin dynamically (needed for the PDF table)
+    (function loadAutoTable() {
+      const script = document.createElement("script");
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js";
+      script.onload = () => {
+        console.log("jsPDF AutoTable loaded");
+      };
+      document.head.appendChild(script);
+    })();
+
+    // Initial render
+    renderTable();
+  </script>
+</body>
+</html>
