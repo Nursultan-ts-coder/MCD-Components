@@ -1,14 +1,27 @@
-.custom-table-container {
+table {
+  padding: 0;
+  border-spacing: 0 0.5rem;
+}
+th {
+  height: 50px;
+}
+td {
+  height: 50px;
+}
+
+#table-root {
   position: relative;
   width: 100%;
   overflow-x: auto;
-  padding: 10px;
+  padding: 20px;
   background-color: #fffdf7;
   font-family: Arial, sans-serif;
+  border-radius: 8px;
+  align-self: baseline;
 }
 
 #export-btn {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   padding: 10px 18px;
   margin-bottom: 10px;
@@ -16,53 +29,6 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
-}
-
-.custom-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 10px;
-}
-
-.custom-table thead th {
-  background: #ffffff;
-  color: #444;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 14px 20px;
-  text-align: left;
-}
-
-.custom-table tbody tr {
-  background: linear-gradient(to right, #eef4fc, #f4f6ff);
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-
-.custom-table tbody td {
-  font-size: 15px;
-  color: #333;
-  padding: 14px 20px;
-}
-
-.status-offline {
-  background: linear-gradient(135deg, #e53935, #b31217);
-  color: #fff;
-  padding: 3px 18px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  display: inline-block;
-}
-
-.status-alerting {
-  background: linear-gradient(135deg, #fbd72b, #f9484a);
-  color: #fff;
-  padding: 6px 18px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  display: inline-block;
 }
 
 .filter-header {
@@ -86,7 +52,7 @@
   z-index: 9999;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   width: 230px;
-  left:0;
+  left: 0;
 }
 
 #filter-search {
@@ -131,18 +97,4 @@
 
 .filter-actions button#filter-clear {
   background: #6c757d;
-}
-
-.pagination {
-  margin-top: 10px;
-  text-align: center;
-}
-
-.pagination button {
-  padding: 6px 12px;
-  margin: 0 5px;
-  border-radius: 4px;
-  border: 1px solid #888;
-  background: #f0f0f0;
-  cursor: pointer;
 }
