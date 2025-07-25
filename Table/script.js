@@ -1,4 +1,3 @@
-// Sample data (normally from Grafana)
 const data = {
   series: [
     {
@@ -45,7 +44,23 @@ const data = {
         },
         {
           name: "productType",
-          values: Array(15).fill("wireless"),
+          values: [
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+            "wireless",
+          ],
         },
         {
           name: "serial",
@@ -94,7 +109,7 @@ let filters = {};
 let sortCol = null;
 let sortAsc = true;
 let currentPage = 1;
-const rowsPerPage = 10;
+const rowsPerPage = 5;
 let selectedCol = null;
 const headerNames = [];
 
@@ -120,7 +135,6 @@ function initData() {
 
 function getFilteredSortedData() {
   let filteredData = [...allData];
-  debugger;
   Object.keys(filters).forEach((colKey) => {
     const colIndex = columns.findIndex((c) => c.key === colKey);
     if (colIndex === -1) return;
@@ -140,14 +154,14 @@ function getFilteredSortedData() {
   return filteredData;
 }
 
-function renderTable(data) {
+function renderTable(tableData) {
   const root = document.getElementById("table-root");
   root.innerHTML = "";
-  const totalPages = Math.ceil(data.length / rowsPerPage);
+  const totalPages = Math.ceil(tableData.length / rowsPerPage);
   const start = (currentPage - 1) * rowsPerPage;
-  const pageData = data.slice(start, start + rowsPerPage);
+  const pageData = tableData.slice(start, start + rowsPerPage);
 
-  const title = `<h2 class="font-bold text-xl mb-4">Sticky Pagination Table</h2>`;
+  const title = `<h2 class="font-bold text-xl mb-4">Networks Down</h2>`;
   const navButtons = renderPagination(currentPage, totalPages);
 
   const tableHead = `<thead><tr>${columns
@@ -163,21 +177,29 @@ function renderTable(data) {
     )
     .join("")}</tr></thead>`;
 
+  const totalColumns = columns.length;
   const tableBody = `<tbody>${pageData
     .map(
       (row, idx) =>
         `<tr class="${idx % 2 === 0 ? "bg-indigo-50" : "bg-blue-50"}">${columns
           .map((_, i) => {
             let cell = row[i];
+
             if (i === 2)
               cell = `<span class="inline-block px-3 py-1 text-sm font-medium text-white rounded-full bg-red-500">${row[i]}</span>`;
+
+            if (i === 0)
+              return `<td class="px-6 text-sm text-gray-700 rounded-l-lg">${cell}</td>`;
+            else if (i === totalColumns - 1)
+              return `<td class="px-6 text-sm text-gray-700 rounded-r-lg">${cell}</td>`;
+
             return `<td class="px-6 text-sm text-gray-700">${cell}</td>`;
           })
           .join("")}</tr>`
     )
     .join("")}</tbody>`;
 
-  root.innerHTML = `<div class="flex justify-between items-center mb-4">${title}${navButtons}</div>
+  root.innerHTML = `<div class="flex justify-between items-center mt-2">${title}${navButtons}</div>
     <div class="overflow-x-auto">
       <table class="min-w-full border-separate">${tableHead}${tableBody}</table>
     </div>`;
@@ -223,8 +245,6 @@ function openFilter(colKey, icon, thRect) {
   });
 
   const container = document.querySelector("#table-root");
-  const iconRect = icon.getBoundingClientRect();
-  const containerRect = container.getBoundingClientRect();
   const top = thRect.top + window.scrollY + thRect.height + 5;
   const left = thRect.left + window.scrollX;
   popup.style.top = `${top}px`;
