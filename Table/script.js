@@ -3,6 +3,14 @@ const data = {
     {
       fields: [
         {
+          name: "lat",
+          values: [],
+        },
+        {
+          name: "lan",
+          values: [],
+        },
+        {
           name: "network_name",
           values: [
             "219 Caltex Farlim DT 10.80.219.0",
@@ -21,6 +29,10 @@ const data = {
             "388 Bagan Ajam DT 10.149.88.0",
             "466 1 Shamelin Mall DT 10.149.166.0",
           ],
+        },
+        {
+          name: "deviceId",
+          values: [],
         },
         {
           name: "name",
@@ -104,26 +116,29 @@ let filters = {};
 let sortCol = null;
 let sortAsc = true;
 let currentPage = 1;
-const rowsPerPage = 5;
+const rowsPerPage = 10;
 let selectedCol = null;
 const headerNames = [];
 
 function initData() {
   const series = data.series[0];
   if (series) {
-    const [networkName, name, productType, serial, status] = series.fields.map(
-      (f) => f.values
-    );
-    allData = networkName.map((_, i) => [
-      networkName[i] ?? "No data",
-      name[i] ?? "No data",
-      status[i] == 0
+    const restaurantNames = series.fields[2].values;
+    const deviceNames = series.fields[4].values;
+    const deviceTypes = series.fields[5].values;
+    const serialNumbers = series.fields[6].values;
+    const statuses = series.fields[7].values;
+
+    allData = restaurantNames.map((_, i) => [
+      restaurantNames[i] ?? "No data",
+      deviceNames[i] ?? "No data",
+      statuses[i] == 0
         ? "Offline"
-        : status[i] == 2
+        : statuses[i] == 2
         ? "Alerting"
-        : status[i] ?? "Unknown",
-      productType[i] ?? "No data",
-      serial[i] ?? "No data",
+        : statuses[i] ?? "Unknown",
+      deviceTypes[i] ?? "No data",
+      serialNumbers[i] ?? "No data",
     ]);
   }
 }
@@ -201,6 +216,7 @@ function renderTable(tableData) {
   setupHeaderEvents();
   bindPaginationEvents();
   updateSortIndicators();
+  setupExport();
 }
 
 function renderPagination(page, totalPages) {
@@ -253,28 +269,50 @@ function bindPaginationEvents() {
 }
 
 function renderFilters() {
-  const container = document.getElementById("filters-container");
-  container.innerHTML = columns
+  const container = document.getElementById("mcd-filters-container");
+
+  const statusButtons = `
+    <div class="flex items-center gap-2 mr-4">
+      <button class="status-btn bg-gray-100 font-semibold py-2 px-4 rounded" data-status="">All</button>
+      <button class="status-btn bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded" data-status="Alerting">Alerting</button>
+      <button class="status-btn bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded" data-status="Offline">Offline</button>
+      <button class="status-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded" data-status="Online">Online</button>
+    </div>
+  `;
+
+  const inputFilters = columns
+    .filter((col) => col.key !== "meraki_device_status (lastNotNull)")
     .map(
       (col) =>
         `<input
         type="text"
-        placeholder="Filter ${col.label}"
+        placeholder="${col.label} ..."
+        id="mcd-filter-input"
         data-col="${col.key}"
-        class="inline-filter px-2 py-1 mr-2 border rounded"
+        class="px-2 py-1 mr-2 border rounded"
         style="min-width: 150px;"
       />`
     )
     .join("");
 
-  document.querySelectorAll(".inline-filter").forEach((input) => {
+  container.innerHTML = `
+    <div class="flex flex-wrap items-center gap-2">${statusButtons}${inputFilters}</div>
+  `;
+
+  setupTextFilters();
+  setupStatusFilterButtons();
+}
+
+function setupTextFilters() {
+  const inputList = document.querySelectorAll("#mcd-filter-input");
+  inputList.forEach((input) => {
     const colKey = input.getAttribute("data-col");
 
     input.addEventListener(
       "input",
       debounce((e) => {
-        debugger;
         const val = e.target.value.toLowerCase();
+        debugger;
         const colIndex = columns.findIndex((c) => c.key === colKey);
 
         if (val) {
@@ -287,14 +325,38 @@ function renderFilters() {
 
         currentPage = 1;
         renderTable(getFilteredSortedData());
-      }, 800)
+      }, 300),
+      { capture: true }
     );
   });
 }
 
+function setupStatusFilterButtons() {
+  const buttons = document.querySelectorAll(".status-btn");
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      buttons.forEach((b) =>
+        b.classList.remove("bg-blue-100", "font-semibold")
+      );
+      btn.classList.add("bg-blue-100", "font-semibold");
+
+      const selected = btn.getAttribute("data-status");
+      if (!selected) {
+        delete filters["meraki_device_status (lastNotNull)"];
+      } else {
+        filters["meraki_device_status (lastNotNull)"] = [selected];
+      }
+
+      currentPage = 1;
+      renderTable(getFilteredSortedData());
+    });
+  });
+}
+
 function setupToggleFilters() {
-  const btn = document.getElementById("toggle-filters");
-  const filtersDiv = document.getElementById("filters-container");
+  const btn = document.getElementById("mcd-toggle-filters");
+  const filtersDiv = document.getElementById("mcd-filters-container");
   btn.addEventListener("click", () => {
     if (filtersDiv.style.display === "none") {
       filtersDiv.style.display = "flex";
@@ -335,6 +397,28 @@ function setupHeaderEvents() {
       renderTable(getFilteredSortedData());
     });
   });
+}
+
+// Export
+function setupExport() {
+  document.querySelector("#export-btn").onclick = () => {
+    const header = [
+      "Restaurant Name",
+      "Device Name",
+      "Status",
+      "Device Type",
+      "Serial Number",
+    ];
+    const rows = [header, ...getFilteredSortedData()];
+    const csv = rows
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "table_export.csv";
+    a.click();
+  };
 }
 
 function init() {
