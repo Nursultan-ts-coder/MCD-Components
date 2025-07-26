@@ -1,4 +1,4 @@
-const data = [
+const mockData = [
   { title: "Uplink", online: "All", total: 10 },
   { title: "WAN Appliances", online: 4, total: 10 },
   { title: "Switches", online: "All", total: 10 },
@@ -6,10 +6,10 @@ const data = [
   { title: "VPN", online: 1, total: 1 },
 ];
 
-const cards = document.querySelectorAll(".card");
+const cards = htmlNode.querySelectorAll(".card");
 
 cards.forEach((card, index) => {
-  const { online, total } = data[index];
+  const { online, total } = mockData[index];
 
   const subtitle = card.querySelector(".card-subtitle");
   const progressBar = card.querySelector(".progress-bar-item");

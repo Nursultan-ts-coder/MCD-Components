@@ -12,14 +12,24 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="table-root"></div>
-    <!-- Filter popup -->
-    <div id="filter-popup" class="filter-popup" style="display: none">
-      <input type="text" id="filter-search" placeholder="Search..." />
-      <div id="filter-options" class="filter-options"></div>
-      <div class="filter-actions">
-        <button id="filter-apply">Apply</button>
-        <button id="filter-clear">Clear</button>
+    <div>
+      <div class="overflow-x-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-2xl font-bold">Sticky Pagination Table</h1>
+          <button id="toggle-filters" class="mb-2 px-3 py-1 border rounded">
+            Show Filters
+          </button>
+        </div>
+        <div class="filters">
+          <div
+            id="filters-container"
+            style="display: none; margin-bottom: 10px"
+          >
+            <!-- Filters will be inserted here -->
+          </div>
+        </div>
+
+        <div id="table-root"></div>
       </div>
     </div>
     <script src="script.js"></script>

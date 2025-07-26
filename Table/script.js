@@ -91,11 +91,6 @@ const data = {
   ],
 };
 
-const tbody = document.querySelector("#custom-table-body");
-const popup = document.querySelector("#filter-popup");
-const searchInput = popup.querySelector("#filter-search");
-const optionsDiv = popup.querySelector("#filter-options");
-const pageInfo = document.querySelector("#page-info");
 const columns = [
   { key: "network_name", label: "Network Name" },
   { key: "name", label: "Device Name" },
@@ -171,7 +166,6 @@ function renderTable(tableData) {
       ) => `<th class="sticky text-left top-0 text-sm font-medium text-gray-600">
         <span class="filter-header sticky top-0 px-6 py-4 text-left text-sm font-medium text-gray-600" data-col="0">
           <span class="header-text">${col.label}</span>
-          <img src="https://img.icons8.com/material-outlined/20/filter.png" class="filter-icon" />
         </span>
       </th>`
     )
@@ -199,59 +193,14 @@ function renderTable(tableData) {
     )
     .join("")}</tbody>`;
 
-  root.innerHTML = `<div class="flex justify-between items-center mt-2">${title}${navButtons}</div>
-    <div class="overflow-x-auto">
+  root.innerHTML = `
       <table class="min-w-full border-separate">${tableHead}${tableBody}</table>
-    </div>`;
+      <div class="flex justify-end items-center mt-2">${navButtons}</div>
+`;
 
   setupHeaderEvents();
-  setupPopupEvents();
   bindPaginationEvents();
   updateSortIndicators();
-}
-
-function openFilter(colKey, icon, thRect) {
-  selectedCol = colKey;
-  const colIndex = columns.findIndex((c) => c.key === colKey);
-  const values = [...new Set(allData.map((row) => row[colIndex]))];
-  const selected = filters[colKey] || [];
-
-  optionsDiv.innerHTML = `
-    <label><input type="checkbox" value="__all__" ${
-      selected.length === 0 ? "checked" : ""
-    }/> All</label>
-    ${values
-      .map(
-        (val) =>
-          `<label><input type="checkbox" value="${val}" ${
-            selected.length === 0 || selected.includes(val) ? "checked" : ""
-          }/> ${val}</label>`
-      )
-      .join("")}`;
-
-  const allCheckbox = optionsDiv.querySelector('input[value="__all__"]');
-  allCheckbox.addEventListener("change", function () {
-    const checked = this.checked;
-    optionsDiv
-      .querySelectorAll("input[type=checkbox]")
-      .forEach((cb) => (cb.checked = checked));
-  });
-  optionsDiv.querySelectorAll("input[type=checkbox]").forEach((cb) => {
-    if (cb.value !== "__all__") {
-      cb.addEventListener("change", function () {
-        if (!this.checked) allCheckbox.checked = false;
-      });
-    }
-  });
-
-  const container = document.querySelector("#table-root");
-  const top = thRect.top + window.scrollY + thRect.height + 5;
-  const left = thRect.left + window.scrollX;
-  popup.style.top = `${top}px`;
-  popup.style.left = `${left}px`;
-  popup.style.width = "auto";
-  popup.style.display = "block";
-  searchInput.value = "";
 }
 
 function renderPagination(page, totalPages) {
@@ -303,6 +252,60 @@ function bindPaginationEvents() {
   });
 }
 
+function renderFilters() {
+  const container = document.getElementById("filters-container");
+  container.innerHTML = columns
+    .map(
+      (col) =>
+        `<input
+        type="text"
+        placeholder="Filter ${col.label}"
+        data-col="${col.key}"
+        class="inline-filter px-2 py-1 mr-2 border rounded"
+        style="min-width: 150px;"
+      />`
+    )
+    .join("");
+
+  document.querySelectorAll(".inline-filter").forEach((input) => {
+    const colKey = input.getAttribute("data-col");
+
+    input.addEventListener(
+      "input",
+      debounce((e) => {
+        debugger;
+        const val = e.target.value.toLowerCase();
+        const colIndex = columns.findIndex((c) => c.key === colKey);
+
+        if (val) {
+          filters[colKey] = allData
+            .map((row) => row[colIndex])
+            .filter((v) => v.toLowerCase().includes(val));
+        } else {
+          delete filters[colKey];
+        }
+
+        currentPage = 1;
+        renderTable(getFilteredSortedData());
+      }, 800)
+    );
+  });
+}
+
+function setupToggleFilters() {
+  const btn = document.getElementById("toggle-filters");
+  const filtersDiv = document.getElementById("filters-container");
+  btn.addEventListener("click", () => {
+    if (filtersDiv.style.display === "none") {
+      filtersDiv.style.display = "flex";
+      btn.textContent = "Hide Filters";
+    } else {
+      filtersDiv.style.display = "none";
+      btn.textContent = "Show Filters";
+    }
+  });
+}
+
 function updateSortIndicators() {
   document.querySelectorAll("thead th").forEach((th, i) => {
     const filterHeader = th.querySelector(".filter-header");
@@ -316,7 +319,6 @@ function updateSortIndicators() {
 function setupHeaderEvents() {
   document.querySelectorAll("thead th").forEach((th, i) => {
     const filterHeader = th.querySelector(".filter-header");
-    const filterIcon = filterHeader.querySelector(".filter-icon");
     const headerText = filterHeader.querySelector(".header-text");
 
     headerNames[i] = headerText.textContent
@@ -324,12 +326,6 @@ function setupHeaderEvents() {
       .replace(/[\u25B2\u25BC]/g, "");
 
     headerText.addEventListener("click", () => {
-      console.log("filterHeader:", filterHeader);
-      console.log("headerText:", headerText);
-      console.log("filterIcon:", filterIcon);
-      console.log("sortCol:", sortCol);
-      console.log("th:", th);
-
       if (sortCol === i) sortAsc = !sortAsc;
       else {
         sortCol = i;
@@ -338,56 +334,22 @@ function setupHeaderEvents() {
       currentPage = 1;
       renderTable(getFilteredSortedData());
     });
-
-    filterIcon.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      const thRect = th.getBoundingClientRect();
-      openFilter(columns[i].key, filterIcon, thRect);
-    });
-  });
-}
-
-function setupPopupEvents() {
-  popup.addEventListener("mousedown", (e) => e.stopPropagation());
-  popup.querySelector("#filter-apply").onclick = (e) => {
-    e.stopPropagation();
-    const checks = [...optionsDiv.querySelectorAll("input[type=checkbox]")];
-    const selected = checks
-      .filter((c) => c.checked && c.value !== "__all__")
-      .map((c) => c.value);
-    filters[selectedCol] = selected.length ? selected : undefined;
-    if (!filters[selectedCol]) delete filters[selectedCol];
-    popup.style.display = "none";
-    currentPage = 1;
-    renderTable(getFilteredSortedData());
-  };
-  popup.querySelector("#filter-clear").onclick = (e) => {
-    e.stopPropagation();
-    delete filters[selectedCol];
-    popup.style.display = "none";
-    currentPage = 1;
-    renderTable(getFilteredSortedData());
-  };
-  searchInput.addEventListener("input", () => {
-    const keyword = searchInput.value.toLowerCase();
-    optionsDiv.querySelectorAll("label").forEach((label) => {
-      const text = label.textContent.toLowerCase();
-      label.style.display = text.includes(keyword) ? "" : "none";
-    });
-  });
-  document.addEventListener("mousedown", (e) => {
-    if (
-      !popup.contains(e.target) &&
-      !e.target.classList.contains("filter-icon")
-    ) {
-      popup.style.display = "none";
-    }
   });
 }
 
 function init() {
   initData();
+  renderFilters();
+  setupToggleFilters();
   renderTable(getFilteredSortedData());
 }
 
 init();
+
+function debounce(fn, delay = 300) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
